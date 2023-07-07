@@ -9,7 +9,6 @@ logger.setLevel(logging.INFO)
 import os
 from ppadb.client import Client as AdbClient
 import timeit
-os.chdir('Files\Scripts\Project BA')
 import baauto
 import gsheets
 server = AdbClient(host="127.0.0.1", port=5037)
@@ -63,7 +62,7 @@ def rerolls(reset_account = False, banner_shift = 3, targets = ['haruna(newyear)
 def adhoc(dvc_port = 5645):
     dvc = baauto.bad(server, dvc_port)
     dvc.connect()
-    dvc.reroll(banner_shift = 3)
+    #dvc.reroll(banner_shift = 3)
     #dvc.pulls()
     #print(dvc.ocr_texts())
     #dvc.pulls(3)
@@ -77,7 +76,7 @@ def adhoc(dvc_port = 5645):
 if __name__ == "__main__":
 
     starttime = timeit.default_timer()
-    daily_login(update_students=True)
+    #daily_login(update_students=True)
     #adhoc(5645)
     rerolls(reset_account = False, banner_shift = 3,targets = ['harunanewyear', 'fuukanewyear', 'himari', 'ako', 'iroha'])
     #adhoc(5645)

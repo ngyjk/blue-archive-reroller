@@ -1,8 +1,8 @@
 import logging
 logger = logging.getLogger('ProjectBA')
 import gspread
-import time
-
+import pandas as pd
+from tenacity import *
 
 class accounts():
 
@@ -28,29 +28,25 @@ class accounts():
 
         logger.info('Accounts Initiated')
 
+    # Generic Functions with Retry (Due to Google API Rate Limits)
+
+    @retry(stop=stop_after_attempt(5), wait = wait_fixed(60), before_sleep=before_sleep_log(logger, logging.INFO))
     def get_cell(self, row, col):
+        return self.sh[0].cell(row, self.col_map[col]).value
 
-        attempts = 0
-
-        while attempts < 6:
-            try:
-                return self.sh[0].cell(row, self.col_map[col]).value
-            except:
-                attempts += 1
-                logger.info(f'Google API Error Attempt {attempts}; Waiting 30s for Retry')
-                time.sleep(30)
-        
-        logger.critical('Multiple Google API Failures, exiting')
-
+    @retry(stop=stop_after_attempt(5), wait = wait_fixed(60), before_sleep=before_sleep_log(logger, logging.INFO))
     def set_cell(self, row, col, value):
         self.sh[0].update_cell(row, self.col_map[col], value)
 
+    @retry(stop=stop_after_attempt(5), wait = wait_fixed(60), before_sleep=before_sleep_log(logger, logging.INFO))
     def set_cell2(self, row, col, value):
         self.sh2[0].update_cell(row, col, value)
 
+    @retry(stop=stop_after_attempt(5), wait = wait_fixed(60), before_sleep=before_sleep_log(logger, logging.INFO))
     def sort_col(self, col):
         self.sh[0].sort((self.col_map[col], 'asc'))
 
+    @retry(stop=stop_after_attempt(5), wait = wait_fixed(60), before_sleep=before_sleep_log(logger, logging.INFO))
     def get_last_row(self, value, col):
         last_row = self.current_row
         current_val = self.get_cell(last_row, col)
@@ -59,12 +55,20 @@ class accounts():
             current_val = self.get_cell(last_row, col)
         return last_row - 1
 
+    @retry(stop=stop_after_attempt(5), wait = wait_fixed(60), before_sleep=before_sleep_log(logger, logging.INFO))
     def next_row(self):
         self.current_row += 1
         if self.get_cell(self.current_row, 'status') == '':
             self.in_progress = False
             return False
         return True
+
+    #@retry(stop=stop_after_attempt(5), wait = wait_fixed(60), before_sleep=before_sleep_log(logger, logging.INFO))
+    def get_entire_sheet(self):
+        headers_and_data = self.sh[0].get_all_values()
+        headers = headers_and_data[0]
+        data = headers_and_data[1:]
+        return pd.DataFrame(data, columns = headers)
     
     # BA specific setters
 

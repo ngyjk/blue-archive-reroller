@@ -64,7 +64,9 @@ class dvc():
         self.device.shell(f'input text {text}')
         logger.debug(f'Text {text} keyed in.')
 
-    def get_screenshot(self, path = 'Users\Keane\Files\Scripts\Project BA\Images\screen.png'):
+    def get_screenshot(self, path = ''):
+        if path == '':
+            path = f'Users\Keane\Files\Scripts\Project BA\Images\screen{self.port}.png'
         image = self.device.screencap()
         with open(path, 'wb') as f:
             f.write(image)
