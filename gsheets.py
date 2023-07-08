@@ -32,10 +32,14 @@ class accounts():
 
     @retry(stop=stop_after_attempt(5), wait = wait_fixed(60), before_sleep=before_sleep_log(logger, logging.INFO))
     def get_cell(self, row, col):
+        if row is None:
+            row = self.current_row
         return self.sh[0].cell(row, self.col_map[col]).value
 
     @retry(stop=stop_after_attempt(5), wait = wait_fixed(60), before_sleep=before_sleep_log(logger, logging.INFO))
     def set_cell(self, row, col, value):
+        if row is None:
+            row = self.current_row
         self.sh[0].update_cell(row, self.col_map[col], value)
 
     @retry(stop=stop_after_attempt(5), wait = wait_fixed(60), before_sleep=before_sleep_log(logger, logging.INFO))
@@ -58,12 +62,8 @@ class accounts():
     @retry(stop=stop_after_attempt(5), wait = wait_fixed(60), before_sleep=before_sleep_log(logger, logging.INFO))
     def next_row(self):
         self.current_row += 1
-        if self.get_cell(self.current_row, 'status') == '':
-            self.in_progress = False
-            return False
-        return True
 
-    #@retry(stop=stop_after_attempt(5), wait = wait_fixed(60), before_sleep=before_sleep_log(logger, logging.INFO))
+    @retry(stop=stop_after_attempt(5), wait = wait_fixed(60), before_sleep=before_sleep_log(logger, logging.INFO))
     def get_entire_sheet(self):
         headers_and_data = self.sh[0].get_all_values()
         headers = headers_and_data[0]
@@ -72,34 +72,34 @@ class accounts():
     
     # BA specific setters
 
-    def set_pyro(self, value):
-        self.set_cell(self.current_row, 'pyro', value)
+    def set_pyro(self, value, row = None):
+        self.set_cell(row, 'pyro', value)
 
-    def set_3stars(self, value):
-        self.set_cell(self.current_row, '3stars', value)
+    def set_3stars(self, value, row = None):
+        self.set_cell(row, '3stars', value)
 
-    def set_daily(self, value):
-        self.set_cell(self.current_row, 'daily', value)
+    def set_daily(self, value, row = None):
+        self.set_cell(row, 'daily', value)
 
-    def set_timestamp(self, value):
-        self.set_cell(self.current_row, 'timestamp', value)
+    def set_timestamp(self, value, row = None):
+        self.set_cell(row, 'timestamp', value)
 
     # BA specific getters
 
-    def get_email(self):
-        return self.get_cell(self.current_row, 'email')
+    def get_email(self, row = None):
+        return self.get_cell(row, 'email')
 
-    def get_port(self):
-        return self.get_cell(self.current_row, 'port')
+    def get_port(self, row = None):
+        return self.get_cell(row, 'port')
 
-    def get_pw(self):
-        return self.get_cell(self.current_row, 'pw')
+    def get_pw(self, row = None):
+        return self.get_cell(row, 'pw')
 
-    def get_status(self):
-        return self.get_cell(self.current_row, 'status')
+    def get_status(self, row = None):
+        return self.get_cell(row, 'status')
 
-    def get_daily(self):
-        return self.get_cell(self.current_row, 'daily')
+    def get_daily(self, row = None):
+        return self.get_cell(row, 'daily')
 
-    def get_account_name(self):
-        return self.get_cell(self.current_row, 'account')
+    def get_account_name(self, row = None):
+        return self.get_cell(row, 'account')

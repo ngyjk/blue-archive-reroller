@@ -11,6 +11,8 @@ from ppadb.client import Client as AdbClient
 import timeit
 import baauto
 import gsheets
+from collections import defaultdict
+from multiprocessing import Pool
 server = AdbClient(host="127.0.0.1", port=5037)
 os.chdir('..\..\..\..\..')
 
@@ -18,35 +20,29 @@ def daily_login(update_students = False):
 
     accounts = gsheets.accounts()
     accounts.sort_col('port')
-    complete = False
-    current_port = 0
+    df = accounts.get_entire_sheet()
+    df = df[df['status'] == 'linked']
+    df = df[df['daily'] != 'done']
+    device_ports = defaultdict(list)
 
-    while complete == False:
-        while current_port == 0:
-            if accounts.get_status() == 'linked' and accounts.get_daily() != 'done':
-                current_port = accounts.get_port()
-            elif int(accounts.get_port()) > 8999:
-                logger.info('All Accounts Finished')
-                complete = True
-                break
-            else:
-                logger.info(f'{accounts.get_account_name()} Already done, skipping')
-                accounts.next_row()
-        if complete:
-            break
-        first_row = accounts.current_row
-        last_row = accounts.get_last_row(current_port, 'port')
-        logger.info(f'Going through accounts from row {first_row} to {last_row} at {current_port}')
-    
-        dvc = baauto.bad(server, int(current_port), accounts = accounts, first_row = first_row, last_row = last_row)
+    for device in set(df['device_port'].values):
+        if int(device) >= 9000:
+            continue
+        df_slice = df[df['device_port'] == device]
+        device_ports[device] = df_slice
+        logger.info(f'{device} mapped to accounts: {list(df_slice.account.values)}')
+
+    def daily_connect_run_shut(device, df_slice, update_students):
+        dvc = baauto.bad(server, port = int(device), df_slice = df_slice)
         dvc.open_and_hide()
         dvc.connect()
         dvc.open_ba_app()
-        if dvc.daily_claims(update_students) == 'complete':
-            complete = True
+        dvc.daily_claims(update_students)
         dvc.disconnect()
         dvc.kill_process()
-        current_port = 0
+    
+    for device, df_slice in device_ports.items():
+        daily_connect_run_shut(device, df_slice, update_students)
 
 def rerolls(reset_account = False, banner_shift = 3, targets = ['haruna(newyear)', 'haruna(newyear', 'fuuka(newyear)', 'fuuka(newyear', 'himari', 'ako', 'iroha']):
     dvc = baauto.bad(server, 5645)

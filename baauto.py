@@ -9,10 +9,9 @@ from datetime import datetime
 
 class bad(dvc):
 
-    def __init__(self, server, port, host = "127.0.0.1", accounts = None, first_row = None, last_row = None,debug = True):
+    def __init__(self, server, port, host = "127.0.0.1", accounts = None, df_slice = None):
 
         super().__init__(server, port, host)
-        self.debug = debug
 
         self.ba_data = badata.badata()
         self.three_star_students = [ocrfuncs.adjust_text(student) for student in self.ba_data.three_star_students]
@@ -21,8 +20,9 @@ class bad(dvc):
         self.coords = self.ba_data.coords
         self.s_coords = self.ba_data.s_coords
         self.accounts = accounts
-        self.first_row = first_row
-        self.last_row = last_row
+        if df_slice is not None:
+            self.df = df_slice.reset_index()
+            self.df['index'] += 2 # Same row number as on google sheets
 
     # Generic Functions
 
@@ -42,27 +42,24 @@ class bad(dvc):
 
     def daily_claims(self, update_students = False):
 
-        complete = False
-        
-        while complete == False:
-            logger.info(f'Starting {self.accounts.get_account_name()}')
-            if self.accounts.get_status() == 'linked' and self.accounts.get_daily() != 'done':
-                self.daily_claim(update_students = update_students)
-            self.accounts.next_row()
-            if int(self.accounts.get_port()) > 8999:
-                return 'complete'
-            if self.accounts.current_row > self.last_row:
-                complete = True
+        for index, row in self.df.iterrows():
+            logger.info(f'Starting {row["account"]} on {self.port}.')
+            self.daily_claim(sheet_number = row['index'], 
+                             use_accounts = False, 
+                             account_name = row['account'],
+                             email = row['email'], 
+                             password = row['pw'], 
+                             update_students = update_students)
+        logger.info(f'Finished daily claims for {self.port}.')
 
-    def daily_claim(self, use_accounts = True, email = '', password = '', update_students = False):
+    def daily_claim(self, sheet_number = None, use_accounts = False, account_name = '', email = '', password = '', update_students = False):
 
         if use_accounts:
             email = self.accounts.get_email()
             password = self.accounts.get_pw()
         self.login(email, password)
         self.claim_mail()
-        if use_accounts:
-            self.update_sheets(update_students)
+        self.update_sheets(account_name = account_name, update_students = update_students, sheet_number = sheet_number)
         self.logout()
 
     def login(self, email, password):
@@ -113,14 +110,15 @@ class bad(dvc):
         time.sleep(3)
         self.tap_coords('nexon_login')
 
-    def update_sheets(self, update_students = False):
+    def update_sheets(self, account_name = None, sheet_number = None, update_students = False):
 
         if update_students:
-            account_name = self.accounts.get_account_name()
-            self.accounts.set_3stars(self.get_students(account = account_name, main_page = 'home'))
-        self.accounts.set_pyro(self.get_pyro())
-        self.accounts.set_daily('done')
-        self.accounts.set_timestamp(str(datetime.now()).split('.')[0])
+            if account_name is None:
+                account_name = self.accounts.get_account_name(row = sheet_number)
+            self.accounts.set_3stars(self.get_students(account = account_name, main_page = 'home'), row = sheet_number)
+        self.accounts.set_pyro(self.get_pyro(), row = sheet_number)
+        self.accounts.set_daily('done', row = sheet_number)
+        self.accounts.set_timestamp(str(datetime.now()).split('.')[0], row = sheet_number)
 
     # Pulls
 
