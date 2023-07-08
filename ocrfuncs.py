@@ -2,20 +2,22 @@ import logging
 logger = logging.getLogger('ProjectBA')
 from paddleocr import PaddleOCR
 from PIL import Image
+from tenacity import *
 import time
 
 logger.info('Starting OCR.')
 ocr = PaddleOCR(show_log = False, use_angle_cls=True, lang='en') # need to run only once to download and load model into memory
 logger.info('OCR Model Loaded.')
 
-def listener(image_func, phrases, interval = 5, init_delay = 0, limit = 60, lower = False, remove_whitespace = False, debug = True, mode = 'first'):
+@retry(stop = stop_after_attempt(3), before_sleep=before_sleep_log(logger, logging.WARNING))
+def listener(image_func, phrases, interval = 5, init_delay = 0, limit = 60, mode = 'first', device = 'NA'):
 
     if type(phrases) == str:
         phrases = [adjust_text(phrases)]
     else:
         phrases = [adjust_text(phrase) for phrase in phrases]
 
-    logger.info(f'Identifying: {phrases}')
+    logger.info(f'[{device}] Identifying: {phrases}')
 
     times = 0
     if init_delay > 0:
@@ -26,12 +28,12 @@ def listener(image_func, phrases, interval = 5, init_delay = 0, limit = 60, lowe
         results = get_all_text(image)
         results = [adjust_text(result) for result in results]
 
-        logger.debug(f'Results: {results}')
+        logger.debug(f'[{device}] Results: {results}')
 
         if mode == 'first':
             for phrase in phrases:
                 if phrase in results:
-                    logger.info(f'Identified: {phrase}')
+                    logger.info(f'[{device}] Identified: {phrase}')
                     return phrase
 
         if mode in ('all', 'partial_all'):
@@ -40,12 +42,12 @@ def listener(image_func, phrases, interval = 5, init_delay = 0, limit = 60, lowe
                 results = ''.join(results)
             for phrase in phrases:
                 if phrase in results:
-                    logger.info(f'Identified: {phrase}')
+                    logger.info(f'[{device}] Identified: {phrase}')
                     found.append(phrase)
             logger.info(f'List of Identified: {found}')
             return found
 
-        logger.info(f'Reran {times} times - not found')
+        logger.info(f'[{device}] Reran {times} times - not found')
         time.sleep(interval)
         times += 1
 
@@ -75,7 +77,7 @@ def adjust_text(text):
     text = text.lower()
     text = text.translate({ord(i): None for i in "().!? -'"})
     return text
-
+'''
 class _ocr():
     
     def __init__(self, temp_path, adjust = True, debug = True):
@@ -154,3 +156,4 @@ class _ocr():
         im = Image.open(self.temp_path)
         im = im.crop((left, top, right, bottom))
         im.save(self.crop_temp_path)
+'''

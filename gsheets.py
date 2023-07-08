@@ -26,7 +26,7 @@ class accounts():
             'port': 11
         }
 
-        logger.info('Accounts Initiated')
+        logger.info('Accounts Initiated.')
 
     # Generic Functions with Retry (Due to Google API Rate Limits)
 

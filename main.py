@@ -12,9 +12,26 @@ import timeit
 import baauto
 import gsheets
 from collections import defaultdict
-from multiprocessing import Pool
+from multiprocessing.pool import ThreadPool as Pool
 server = AdbClient(host="127.0.0.1", port=5037)
 os.chdir('..\..\..\..\..')
+
+
+def daily_connect_run_shut(device, df_slice, update_students = False, accounts = None):
+    try:
+        logger.info(f'Starting daily for {device}.')
+        dvc = baauto.bad(server, port = int(device), df_slice = df_slice, accounts = accounts)
+        dvc.open_and_hide()
+        dvc.connect()
+        dvc.open_ba_app()
+        dvc.daily_claims(update_students)
+        dvc.disconnect()
+        dvc.kill_process()
+        return device
+    except:
+        logger.critical(f'[{device}] Crashed.', exc_info = True)
+        dvc.disconnect()
+        dvc.kill_process()
 
 def daily_login(update_students = False):
 
@@ -23,26 +40,20 @@ def daily_login(update_students = False):
     df = accounts.get_entire_sheet()
     df = df[df['status'] == 'linked']
     df = df[df['daily'] != 'done']
-    device_ports = defaultdict(list)
+    device_ports = []
 
     for device in set(df['device_port'].values):
         if int(device) >= 9000:
             continue
         df_slice = df[df['device_port'] == device]
-        device_ports[device] = df_slice
+        device_ports.append((device, df_slice, update_students, accounts))
         logger.info(f'{device} mapped to accounts: {list(df_slice.account.values)}')
 
-    def daily_connect_run_shut(device, df_slice, update_students):
-        dvc = baauto.bad(server, port = int(device), df_slice = df_slice)
-        dvc.open_and_hide()
-        dvc.connect()
-        dvc.open_ba_app()
-        dvc.daily_claims(update_students)
-        dvc.disconnect()
-        dvc.kill_process()
+    with Pool(processes = 2) as pool:
+        results = pool.starmap(daily_connect_run_shut, device_ports)
     
-    for device, df_slice in device_ports.items():
-        daily_connect_run_shut(device, df_slice, update_students)
+    #for device, df_slice, update_students, accounts in device_ports:
+        #daily_connect_run_shut(device, df_slice, update_students, accounts)
 
 def rerolls(reset_account = False, banner_shift = 3, targets = ['haruna(newyear)', 'haruna(newyear', 'fuuka(newyear)', 'fuuka(newyear', 'himari', 'ako', 'iroha']):
     dvc = baauto.bad(server, 5645)
@@ -72,17 +83,15 @@ def adhoc(dvc_port = 5645):
 if __name__ == "__main__":
 
     starttime = timeit.default_timer()
-    #daily_login(update_students=True)
+    daily_login(update_students=True)
     #adhoc(5645)
-    rerolls(reset_account = False, banner_shift = 3,targets = ['harunanewyear', 'fuukanewyear', 'himari', 'ako', 'iroha'])
+    #rerolls(reset_account = False, banner_shift = 3,targets = ['harunanewyear', 'fuukanewyear', 'himari', 'ako', 'iroha'])
     #adhoc(5645)
     logger.info(f"The start time is : {starttime}")
     logger.info(f"The time difference is : {timeit.default_timer() - starttime}")
     quit()
 
 
-# Settle Logging - Done
-# Optimize API calls to gspread
 # Multi-Processing for Logins 
 # Auto Kill / Start Server
 # Error Handling for Various Scenarios (App crash, emulator crash)

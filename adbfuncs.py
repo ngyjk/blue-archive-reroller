@@ -34,7 +34,6 @@ class dvc():
         for d in devices:
             if d.serial == f'{str(self.host)}:{str(self.port)}':
                 self.device = d
-        self.ocr = ocrfuncs._ocr(temp_path = f'Images')
 
         logger.debug(f'dvc {self.device.serial} connected.')
 
@@ -89,7 +88,7 @@ class dvc():
             while GetForegroundWindow() == w:
                 time.sleep(0.1)
                 if GetForegroundWindow() != w:
-                    logger.info('Switching Back to Foreground Window')
+                    logger.info('Switching Back to Foreground Window.')
                     SetForegroundWindow(w)
         except:
             logger.warning('Foregroundcheck error', exc_info = True)
