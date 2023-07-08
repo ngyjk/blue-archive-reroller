@@ -6,16 +6,7 @@ import ocrfuncs
 import subprocess
 import os
 from win32gui import GetForegroundWindow, SetForegroundWindow
-from contextlib import contextmanager
-
-@contextmanager
-def cwd(path):
-    oldpwd = os.getcwd()
-    os.chdir(path)
-    try:
-        yield
-    finally:
-        os.chdir(oldpwd)
+from tenacity import *
 
 class dvc():
 
@@ -24,9 +15,11 @@ class dvc():
         self.server = server
         self.port = port
         self.host = host
+        self.bs_path = os.path.abspath('..\..\..\..\..\Program Files\BlueStacks_nxt\HD-Player.exe')
         
         logger.debug(f'dvc {port} initalized.')
     
+    @retry(stop = stop_after_attempt(3), before_sleep=before_sleep_log(logger, logging.WARNING))
     def connect(self):
 
         self.server.remote_connect(self.host, self.port)
@@ -34,8 +27,9 @@ class dvc():
         for d in devices:
             if d.serial == f'{str(self.host)}:{str(self.port)}':
                 self.device = d
-
-        logger.debug(f'dvc {self.device.serial} connected.')
+                logger.debug(f'dvc {self.device.serial} connected.')
+                return
+        raise SystemError('Device not connected.')
 
     def disconnect(self):
         self.server.remote_disconnect(self.host, self.port)
@@ -81,9 +75,8 @@ class dvc():
         instance_name = self.get_instance_name()
         w = GetForegroundWindow()
         logger.debug(f'Current ForegroundWindow saved.')
-        with cwd('Program Files\BlueStacks_nxt'):
-            self.p = subprocess.Popen(f"HD-Player.exe --instance {instance_name}")
-            logger.debug(f'Opened Instance {instance_name}.')
+        self.p = subprocess.Popen([self.bs_path, "--instance", instance_name])
+        logger.debug(f'Opened Instance {instance_name}.')
         try:
             while GetForegroundWindow() == w:
                 time.sleep(0.1)

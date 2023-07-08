@@ -208,9 +208,10 @@ class bad(dvc):
             if evaluate and loop < max_loop:
                 self.reset_account()
 
-    def reroll(self, banner_shift = 0, user = 'temp'):
+    def reroll(self, banner_shift = 0, user = 'temp', stage = 'None'):
         
-        self.new_account()
+        if stage == 'None':
+            self.new_account()
         self.forward_story()
         self.battle_one()
         self.forward_story()
@@ -253,7 +254,7 @@ class bad(dvc):
         if check == 'confirm':
             self.tap_coords('single_confirm')
         self.tap_coords('reroll_name')
-        name = random.choice(['Thomas', 'Stacy', 'Dave', 'Greg' , 'Rachel', 'Fae', 'Charles'], device = self.port)
+        name = random.choice(['Thomas', 'Stacy', 'Dave', 'Greg' , 'Rachel', 'Fae', 'Charles'])
         self.type(name)
         time.sleep(7)
         self.tap_coords('reroll_confirm')
@@ -262,7 +263,7 @@ class bad(dvc):
         #time.sleep(7)
         #self.tap_coords('single_confirm')
         #self.tap_coords('single_confirm')
-        ocrfuncs.listener(self.get_screenshot, [f'Welcome to the Shittim Chest, {name} Sensei', f'Welcome to the Shittim Chest, {name} Sensei.'], 5, 10)
+        ocrfuncs.listener(self.get_screenshot, [f'Welcome to the Shittim Chest, {name} Sensei', f'Welcome to the Shittim Chest, {name} Sensei.'], 5, 10, device = self.port)
         self.tap_coords('single_confirm')
 
     def battle_one(self):
@@ -410,7 +411,7 @@ class bad(dvc):
         return ','.join(pulled_characters)
 
     def get_pyro(self):
-        path = self.get_screenshot(self.ba_data.base_path + f'\Images\Screen.png')
+        path = self.get_screenshot(self.ba_data.base_path + f'\Images\screen{self.port}.png')
         ocrfuncs.crop_image(path, path, 1250, 27, 1500, 92)
         return ocrfuncs.get_all_text(path)[0]
 

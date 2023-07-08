@@ -11,11 +11,9 @@ from ppadb.client import Client as AdbClient
 import timeit
 import baauto
 import gsheets
-from collections import defaultdict
 from multiprocessing.pool import ThreadPool as Pool
 server = AdbClient(host="127.0.0.1", port=5037)
 os.chdir('..\..\..\..\..')
-
 
 def daily_connect_run_shut(device, df_slice, update_students = False, accounts = None):
     try:
@@ -69,7 +67,7 @@ def rerolls(reset_account = False, banner_shift = 3, targets = ['haruna(newyear)
 def adhoc(dvc_port = 5645):
     dvc = baauto.bad(server, dvc_port)
     dvc.connect()
-    #dvc.reroll(banner_shift = 3)
+    dvc.reroll(banner_shift = 3, stage = 'a')
     #dvc.pulls()
     #print(dvc.ocr_texts())
     #dvc.pulls(3)
@@ -83,16 +81,15 @@ def adhoc(dvc_port = 5645):
 if __name__ == "__main__":
 
     starttime = timeit.default_timer()
-    daily_login(update_students=True)
+    #daily_login(update_students=True)
     #adhoc(5645)
-    #rerolls(reset_account = False, banner_shift = 3,targets = ['harunanewyear', 'fuukanewyear', 'himari', 'ako', 'iroha'])
+    rerolls(reset_account = False, banner_shift = 3,targets = ['harunanewyear', 'fuukanewyear', 'himari', 'ako', 'iroha'])
     #adhoc(5645)
     logger.info(f"The start time is : {starttime}")
     logger.info(f"The time difference is : {timeit.default_timer() - starttime}")
     quit()
 
 
-# Multi-Processing for Logins 
 # Auto Kill / Start Server
 # Error Handling for Various Scenarios (App crash, emulator crash)
 # Re-write ocrfuncs to capture current state
